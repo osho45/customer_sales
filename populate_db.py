@@ -4,6 +4,7 @@ import os
 import psycopg2
 from psycopg2 import sql
 from psycopg2 import extras
+from psycopg2.extras import execute_values
 
 from utils import get_db_url
 
@@ -328,8 +329,29 @@ def insert_dimensions(conn, data):
     return region_id_map, country_id_map, customer_id_map, product_cat_id_map, product_id_map
 
 
+# def insert_orders(conn, data, customer_id_map, product_id_map):
+#     """Insert rows into OrderDetail using executemany."""
+#     order_rows = []
+#     for full_name_key, product_name, order_date_str, qty in data["order_lines"]:
+#         cust_id = customer_id_map.get(full_name_key)
+#         prod_id = product_id_map.get(product_name)
+#         if cust_id is None or prod_id is None:
+#             continue
+#         order_rows.append((cust_id, prod_id, order_date_str, qty))
+
+#     with conn:
+#         with conn.cursor() as cur:
+#             if order_rows:
+#                 cur.executemany(
+#                     'INSERT INTO "OrderDetail" ("CustomerID", "ProductID", "OrderDate", "QuantityOrdered") '
+#                     'VALUES (%s, %s, %s, %s)',
+#                     order_rows,
+#                 )
+
+
+
 def insert_orders(conn, data, customer_id_map, product_id_map):
-    """Insert rows into OrderDetail using executemany."""
+
     order_rows = []
     for full_name_key, product_name, order_date_str, qty in data["order_lines"]:
         cust_id = customer_id_map.get(full_name_key)
@@ -340,12 +362,13 @@ def insert_orders(conn, data, customer_id_map, product_id_map):
 
     with conn:
         with conn.cursor() as cur:
-            if order_rows:
-                cur.executemany(
-                    'INSERT INTO "OrderDetail" ("CustomerID", "ProductID", "OrderDate", "QuantityOrdered") '
-                    'VALUES (%s, %s, %s, %s)',
-                    order_rows,
-                )
+            sql = '''
+                INSERT INTO "OrderDetail"
+                ("CustomerID", "ProductID", "OrderDate", "QuantityOrdered")
+                VALUES %s
+            '''
+            execute_values(cur, sql, order_rows)
+
 
 
 def main():
