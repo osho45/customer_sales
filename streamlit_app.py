@@ -178,6 +178,22 @@ button[kind="primary"] {
 </style>
 """, unsafe_allow_html=True)
 
+# Hide sidebar during login
+if "logged_in" not in st.session_state or not st.session_state.logged_in:
+    st.markdown("""
+    <style>
+        [data-testid="stSidebar"] { 
+            display: none !important;
+        }
+        /* Expand main content to full width */
+        .block-container {
+            padding-left: 5rem !important;
+            padding-right: 5rem !important;
+        }
+    </style>
+    """, unsafe_allow_html=True)
+
+
 # -------------------------------------------------------------------
 # 🎨 SIDEBAR
 # -------------------------------------------------------------------
