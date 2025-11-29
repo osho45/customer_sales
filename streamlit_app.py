@@ -146,7 +146,7 @@ Rules:
         return None
 
 # -------------------------------------------------------------------
-# 🧹 CUSTOM CSS (Sidebar width + no scroll + green buttons)
+# 🧹 CUSTOM CSS (Kept exactly as your original)
 # -------------------------------------------------------------------
 st.markdown("""
 <style>
@@ -178,28 +178,18 @@ button[kind="primary"] {
 </style>
 """, unsafe_allow_html=True)
 
-# Hide sidebar during login
-if "logged_in" not in st.session_state or not st.session_state.logged_in:
-    st.markdown("""
-    <style>
-        [data-testid="stSidebar"] { 
-            display: none !important;
-        }
-        /* Expand main content to full width */
-        .block-container {
-            padding-left: 5rem !important;
-            padding-right: 5rem !important;
-        }
-    </style>
-    """, unsafe_allow_html=True)
-
-
 # -------------------------------------------------------------------
-# 🎨 SIDEBAR
+# 🎨 MAIN APP LAYOUT
 # -------------------------------------------------------------------
-with st.sidebar:
-    st.subheader("💡 Examples")
-    st.write("""
+def main():
+    require_login()
+
+    # ---------------------------
+    # SIDEBAR (only after login)
+    # ---------------------------
+    with st.sidebar:
+        st.subheader("💡 Examples")
+        st.write("""
 - How many customers are in each country?  
 - What is the total revenue by region?  
 - What products generated the most sales?  
@@ -207,18 +197,15 @@ with st.sidebar:
 - Daily order counts this year.
 """)
 
-    st.markdown('<div class="sidebar-footer">', unsafe_allow_html=True)
-    if st.button("📕 Logout", use_container_width=True):
-        st.session_state.logged_in = False
-        st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown('<div class="sidebar-footer">', unsafe_allow_html=True)
+        if st.button("📕 Logout", use_container_width=True):
+            st.session_state.logged_in = False
+            st.rerun()
+        st.markdown("</div>", unsafe_allow_html=True)
 
-# -------------------------------------------------------------------
-# 🎨 MAIN APP LAYOUT
-# -------------------------------------------------------------------
-def main():
-    require_login()
-
+    # ---------------------------
+    # MAIN PAGE CONTENT
+    # ---------------------------
     st.title("🤖 AI SQL Navigator — Sales & Customer Insights")
     st.write("✨ Natural language in, SQL out.")
     st.markdown("---")
