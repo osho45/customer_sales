@@ -190,7 +190,7 @@ Generate the SQL query now:
 def main():
     require_login()
 
-    # Initialize state
+    # Initialize session state
     if "generated_sql" not in st.session_state:
         st.session_state.generated_sql = None
     if "query_history" not in st.session_state:
@@ -199,34 +199,10 @@ def main():
         st.session_state.current_question = None
 
     # -----------------------------------------------------------
-    # LEFT SIDEBAR — QUERY HISTORY
+    # LEFT SIDEBAR — Examples + Logout
     # -----------------------------------------------------------
-    with st.sidebar:
-        st.title("📜 Query History")
-
-        if st.session_state.query_history:
-            for idx, item in enumerate(reversed(st.session_state.query_history[-12:])):
-                with st.expander(f"{item['question'][:40]}..."):
-                    st.markdown(f"**Question:** {item['question']}")
-                    st.code(item["sql"], language="sql")
-                    st.caption(f"Returned {item['rows']} rows")
-
-                    if st.button(
-                        f"Re-run", key=f"rerun_{idx}", use_container_width=True
-                    ):
-                        df = run_query(item["sql"])
-                        if df is not None:
-                            st.success(f"Returned {len(df)} rows")
-                            st.dataframe(df, use_container_width=True)
-        else:
-            st.info("No history yet.")
-
-    # -----------------------------------------------------------
-    # RIGHT SIDEBAR — EXAMPLES & LOGOUT
-    # -----------------------------------------------------------
-    right_sidebar = st.sidebar.container()
-    right_sidebar.title("💡 Examples")
-    right_sidebar.write(
+    st.sidebar.title("💡 Examples")
+    st.sidebar.write(
         """
 - How many customers are in each country?  
 - What is the total revenue by region?  
@@ -236,13 +212,9 @@ def main():
 """
     )
 
-    # Push Logout button to the bottom
-    right_sidebar.markdown("<br><br><br><br><br><br>", unsafe_allow_html=True)
-    right_sidebar.markdown("<br><br>", unsafe_allow_html=True)
-
-    logout_btn = right_sidebar.button(
-        "🚪 Logout", type="primary", use_container_width=True
-    )
+    # Push Logout button to bottom
+    st.sidebar.markdown("<br><br><br><br><br><br><br><br><br>", unsafe_allow_html=True)
+    logout_btn = st.sidebar.button("🚪 Logout", type="primary", use_container_width=True)
     if logout_btn:
         st.session_state.logged_in = False
         st.rerun()
@@ -259,20 +231,19 @@ def main():
     user_question = st.text_area(
         "What would you like to know?",
         height=100,
-        placeholder="Example: Show total revenue by product category",
+        placeholder="Example: Show the total revenue by product category",
     )
 
-    # Generate button
     if st.button("Generate SQL", type="primary"):
         user_question = user_question.strip()
-        if user_question:
-            with st.spinner("Generating SQL..."):
-                sql_query = generate_sql_with_gpt(user_question)
-                if sql_query:
-                    st.session_state.generated_sql = sql_query
-                    st.session_state.current_question = user_question
 
-    # Display generated SQL
+        with st.spinner("Generating SQL..."):
+            sql_query = generate_sql_with_gpt(user_question)
+            if sql_query:
+                st.session_state.generated_sql = sql_query
+                st.session_state.current_question = user_question
+
+    # Show generated SQL
     if st.session_state.generated_sql:
         st.subheader("Generated SQL Query")
 
@@ -282,12 +253,15 @@ def main():
             height=200,
         )
 
-        # Run Query button
         if st.button("Run Query", type="primary"):
             with st.spinner("Running query..."):
                 df = run_query(edited_sql)
+
                 if df is not None:
-                    # Save history
+                    st.success(f"Returned {len(df)} rows")
+                    st.dataframe(df, use_container_width=True)
+
+                    # Save query history
                     st.session_state.query_history.append(
                         {
                             "question": st.session_state.current_question,
@@ -296,8 +270,27 @@ def main():
                         }
                     )
 
-                    st.success(f"Returned {len(df)} rows")
-                    st.dataframe(df, use_container_width=True)
+    # -----------------------------------------------------------
+    # BOTTOM SECTION — QUERY HISTORY
+    # -----------------------------------------------------------
+    st.markdown("---")
+    st.subheader("📜 Query History")
+
+    if not st.session_state.query_history:
+        st.info("No past queries yet.")
+    else:
+        for idx, item in enumerate(reversed(st.session_state.query_history[-10:])):
+            with st.expander(f"{item['question'][:60]}..."):
+                st.markdown(f"**Question:** {item['question']}")
+                st.code(item["sql"], language="sql")
+                st.caption(f"Returned {item['rows']} rows")
+
+                if st.button(f"Re-run Query {idx+1}", key=f"rerun_bottom_{idx}"):
+                    df = run_query(item["sql"])
+                    if df is not None:
+                        st.success(f"Returned {len(df)} rows")
+                        st.dataframe(df, use_container_width=True)
+
 
 
 
