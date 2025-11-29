@@ -190,52 +190,115 @@ Generate the SQL query now:
 def main():
     require_login()
 
+    # Initialize state
+    if "generated_sql" not in st.session_state:
+        st.session_state.generated_sql = None
+    if "query_history" not in st.session_state:
+        st.session_state.query_history = []
+    if "current_question" not in st.session_state:
+        st.session_state.current_question = None
+
+    # -----------------------------------------------------------
+    # LEFT SIDEBAR — QUERY HISTORY
+    # -----------------------------------------------------------
+    with st.sidebar:
+        st.title("📜 Query History")
+
+        if st.session_state.query_history:
+            for idx, item in enumerate(reversed(st.session_state.query_history[-12:])):
+                with st.expander(f"{item['question'][:40]}..."):
+                    st.markdown(f"**Question:** {item['question']}")
+                    st.code(item["sql"], language="sql")
+                    st.caption(f"Returned {item['rows']} rows")
+
+                    if st.button(
+                        f"Re-run", key=f"rerun_{idx}", use_container_width=True
+                    ):
+                        df = run_query(item["sql"])
+                        if df is not None:
+                            st.success(f"Returned {len(df)} rows")
+                            st.dataframe(df, use_container_width=True)
+        else:
+            st.info("No history yet.")
+
+    # -----------------------------------------------------------
+    # RIGHT SIDEBAR — EXAMPLES & LOGOUT
+    # -----------------------------------------------------------
+    right_sidebar = st.sidebar.container()
+    right_sidebar.title("💡 Examples")
+    right_sidebar.write(
+        """
+- How many customers are in each country?  
+- What is the total revenue by region?  
+- What products generated the most sales?  
+- Show the top 10 customers by total revenue.  
+- Daily order counts this year.
+"""
+    )
+
+    # Push Logout button to the bottom
+    right_sidebar.markdown("<br><br><br><br><br><br>", unsafe_allow_html=True)
+    right_sidebar.markdown("<br><br>", unsafe_allow_html=True)
+
+    logout_btn = right_sidebar.button(
+        "🚪 Logout", type="primary", use_container_width=True
+    )
+    if logout_btn:
+        st.session_state.logged_in = False
+        st.rerun()
+
+    # -----------------------------------------------------------
+    # MAIN CONTENT AREA
+    # -----------------------------------------------------------
     st.title("🤖 AI SQL Query Assistant — Customer Sales Database")
     st.write("Ask natural language questions and get SQL queries!")
 
     st.markdown("---")
-    st.sidebar.title("💡 Examples")
-    st.sidebar.write(
-        """
-• How many customers are in each country?  
-• What is the total revenue by region?  
-• What products generated the most sales?  
-• Show the top 10 customers by total revenue.  
-• Daily order counts this year.
-"""
-    )
 
-    if st.sidebar.button("Logout"):
-        st.session_state.logged_in = False
-        st.rerun()
-
-    if "generated_sql" not in st.session_state:
-        st.session_state.generated_sql = None
-
-    # Ask question
+    # User input
     user_question = st.text_area(
-        "What would you like to know?", height=100, placeholder="Example: Total revenue by product category"
+        "What would you like to know?",
+        height=100,
+        placeholder="Example: Show total revenue by product category",
     )
 
+    # Generate button
     if st.button("Generate SQL", type="primary"):
-        with st.spinner("Generating SQL..."):
-            st.session_state.generated_sql = generate_sql_with_gpt(user_question)
+        user_question = user_question.strip()
+        if user_question:
+            with st.spinner("Generating SQL..."):
+                sql_query = generate_sql_with_gpt(user_question)
+                if sql_query:
+                    st.session_state.generated_sql = sql_query
+                    st.session_state.current_question = user_question
 
-    # Show SQL
+    # Display generated SQL
     if st.session_state.generated_sql:
         st.subheader("Generated SQL Query")
+
         edited_sql = st.text_area(
             "Edit if needed:",
             value=st.session_state.generated_sql,
             height=200,
         )
 
+        # Run Query button
         if st.button("Run Query", type="primary"):
             with st.spinner("Running query..."):
                 df = run_query(edited_sql)
                 if df is not None:
+                    # Save history
+                    st.session_state.query_history.append(
+                        {
+                            "question": st.session_state.current_question,
+                            "sql": edited_sql,
+                            "rows": len(df),
+                        }
+                    )
+
                     st.success(f"Returned {len(df)} rows")
                     st.dataframe(df, use_container_width=True)
+
 
 
 if __name__ == "__main__":
