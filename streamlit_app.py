@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, text
 
 
 load_dotenv()
-st.set_page_config(page_title="SQL Copilot", page_icon="🛰️", layout="wide")
+st.set_page_config(page_title="SQL Copilot", page_icon="SQL", layout="wide")
 
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 HASHED_PASSWORD = st.secrets["HASHED_PASSWORD"].encode("utf-8")
@@ -359,33 +359,34 @@ def render_history():
     if not history:
         st.caption("No prompts yet. Your recent questions will appear here.")
         return
+    for idx in range(len(history) - 1, -1, -1):
+        item = history[idx]
+        with st.expander(f"Q: {item['question']}", expanded=False):
+            st.caption("SQL generated and saved")
+            btn_cols = st.columns([1, 1, 1, 5])
+            result_area = st.empty()
+            run_df = None
 
-    for idx, item in enumerate(reversed(history)):
-        st.markdown(
-            f"<div class='history-item'><strong>Q:</strong> {item['question']}<br><span class='muted'>SQL generated and saved</span></div>",
-            unsafe_allow_html=True,
-        )
-        result_area = st.empty()
-        btn_cols = st.columns([1, 1, 6])
-        run_clicked = False
-        run_df = None
+            with btn_cols[0]:
+                if st.button("Load", key=f"load_hist_{idx}", use_container_width=True):
+                    st.session_state.generated_sql = item["sql"]
+                    st.session_state.current_question = item["question"]
+                    st.success("Loaded into the editor.")
+                    st.rerun()
+            with btn_cols[1]:
+                if st.button("Run again", key=f"run_hist_{idx}", use_container_width=True):
+                    st.session_state.generated_sql = item["sql"]
+                    st.session_state.current_question = item["question"]
+                    run_df = run_query(item["sql"])
+            with btn_cols[2]:
+                if st.button("Delete", key=f"delete_hist_{idx}", use_container_width=True):
+                    del st.session_state.query_history[idx]
+                    st.success("Removed from history.")
+                    st.rerun()
 
-        with btn_cols[0]:
-            if st.button("Load", key=f"load_hist_{idx}", use_container_width=True):
-                st.session_state.generated_sql = item["sql"]
-                st.session_state.current_question = item["question"]
-                st.success("Loaded into the editor.")
-                st.rerun()
-        with btn_cols[1]:
-            if st.button("Run again", key=f"run_hist_{idx}", use_container_width=True):
-                st.session_state.generated_sql = item["sql"]
-                st.session_state.current_question = item["question"]
-                run_df = run_query(item["sql"])
-                run_clicked = True
-
-        if run_clicked and run_df is not None:
-            result_area.success(f"Ran history query • {len(run_df)} rows")
-            result_area.dataframe(run_df, use_container_width=True)
+            if run_df is not None:
+                result_area.success(f"Ran history query - {len(run_df)} rows")
+                result_area.dataframe(run_df, use_container_width=True)
 
 
 def main():
@@ -397,11 +398,11 @@ def main():
     require_login()
 
     examples = [
-        "Rank regions by revenue month over month.",
-        "Top 10 customers by lifetime value.",
-        "Products with declining demand this quarter.",
-        "Daily order volume by country vs prior week.",
-        "Average basket size by region and month.",
+        "YOY revenue change by product category.",
+        "Repeat vs new customers over the last 60 days.",
+        "Top 10 products by gross margin.",
+        "Order latency by region and month.",
+        "Churned customers in the last quarter.",
     ]
     render_sidebar(examples)
     render_hero()
