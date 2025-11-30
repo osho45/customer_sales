@@ -1,19 +1,21 @@
+import os
 import re
-import streamlit as st
+import bcrypt
 import pandas as pd
+import streamlit as st
 from dotenv import load_dotenv
 from openai import OpenAI
-import os
-import bcrypt
 from sqlalchemy import create_engine, text
 
+
 load_dotenv()
+st.set_page_config(page_title="SQL Copilot", page_icon="🛰️", layout="wide")
 
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 HASHED_PASSWORD = st.secrets["HASHED_PASSWORD"].encode("utf-8")
 
 # -------------------------------------------------------------------
-# 📦 DATABASE SCHEMA
+# DATABASE SCHEMA (for the prompt)
 # -------------------------------------------------------------------
 DATABASE_SCHEMA = """
 Database Schema (Customer Sales):
@@ -61,40 +63,48 @@ TABLE: "OrderDetail" (
 """
 
 # -------------------------------------------------------------------
-# 🔐 LOGIN
+# LOGIN
 # -------------------------------------------------------------------
 def login_screen():
-    st.title("🔐 Secure Login")
-    st.markdown("---")
-    st.write("Enter your password to access the AI SQL Navigator.")
+    st.markdown(
+        """
+        <div class="hero-icon">🔒</div>
+        <h1 class="hero-title">Secure Workspace Login</h1>
+        <p class="hero-sub">Enter your team password to access the AI SQL copilot.</p>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    password = st.text_input("Password", type="password", key="login_password")
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+    password = st.text_input("Password", type="password", key="login_password", placeholder="••••••••")
 
-    if st.button("Login"):
+    if st.button("Enter workspace", type="primary"):
         if password and bcrypt.checkpw(password.encode("utf-8"), HASHED_PASSWORD):
             st.session_state.logged_in = True
-            st.success("Login successful!")
+            st.success("Login successful")
             st.rerun()
         else:
-            st.error("Incorrect password")
+            st.error("Incorrect password. Please try again.")
+
 
 def require_login():
     if "logged_in" not in st.session_state or not st.session_state.logged_in:
         login_screen()
         st.stop()
 
+
 # -------------------------------------------------------------------
-# 🛢️ DATABASE ENGINE
+# DATABASE ENGINE
 # -------------------------------------------------------------------
 @st.cache_resource
 def get_engine():
-    POSTGRES_USERNAME = st.secrets["POSTGRES_USERNAME"]
-    POSTGRES_PASSWORD = st.secrets["POSTGRES_PASSWORD"]
-    POSTGRES_SERVER = st.secrets["POSTGRES_SERVER"]
-    POSTGRES_DATABASE = st.secrets["POSTGRES_DATABASE"]
-
-    url = f"postgresql://{POSTGRES_USERNAME}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}/{POSTGRES_DATABASE}"
+    username = st.secrets["POSTGRES_USERNAME"]
+    password = st.secrets["POSTGRES_PASSWORD"]
+    server = st.secrets["POSTGRES_SERVER"]
+    database = st.secrets["POSTGRES_DATABASE"]
+    url = f"postgresql://{username}:{password}@{server}/{database}"
     return create_engine(url, pool_pre_ping=True, pool_recycle=3600)
+
 
 def run_query(sql):
     engine = get_engine()
@@ -104,15 +114,18 @@ def run_query(sql):
         st.error(f"Error executing query: {e}")
         return None
 
+
 # -------------------------------------------------------------------
-# 🤖 OPENAI CLIENT
+# OPENAI CLIENT
 # -------------------------------------------------------------------
 @st.cache_resource
 def get_openai_client():
     return OpenAI(api_key=OPENAI_API_KEY)
 
+
 def extract_sql_from_response(response_text):
-    return re.sub(r"^```sql\s*|\s*```$", "", response_text, flags=re.MULTILINE | re.IGNORECASE).strip()
+    return re.sub(r"^```sql\\s*|\\s*```$", "", response_text, flags=re.MULTILINE | re.IGNORECASE).strip()
+
 
 def generate_sql_with_gpt(user_question):
     client = get_openai_client()
@@ -130,7 +143,6 @@ Rules:
 4. Revenue = QuantityOrdered * ProductUnitPrice.
 5. Add LIMIT 100 for large results.
 """
-
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -145,98 +157,259 @@ Rules:
         st.error(f"OpenAI error: {e}")
         return None
 
+
 # -------------------------------------------------------------------
-# 🧹 CUSTOM CSS (Kept exactly as your original)
+# THEME / STYLES
 # -------------------------------------------------------------------
-st.markdown("""
+GLOBAL_CSS = """
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
+
+:root {
+    --bg-1: #050b17;
+    --bg-2: #0c1629;
+    --card: rgba(255, 255, 255, 0.04);
+    --border: rgba(255, 255, 255, 0.08);
+    --glow: rgba(109, 211, 255, 0.35);
+    --accent: #6dd3ff;
+    --accent-2: #a855f7;
+    --text: #e5e7eb;
+    --muted: #94a3b8;
+}
+
+html, body, [data-testid="stAppViewContainer"] {
+    background: radial-gradient(circle at 20% 20%, rgba(109,211,255,0.05), transparent 20%),
+                radial-gradient(circle at 80% 0%, rgba(168,85,247,0.08), transparent 25%),
+                linear-gradient(145deg, var(--bg-1), var(--bg-2));
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+.hero-title {
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+    font-size: 42px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    margin-bottom: 6px;
+}
+
+.hero-sub {
+    color: var(--muted);
+    font-size: 16px;
+    margin-top: 0;
+}
+
+.hero-icon {
+    font-size: 32px;
+    margin-bottom: 8px;
+}
+
+.eyebrow {
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.pill {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+    padding: 6px 10px;
+    border-radius: 14px;
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.pill-row {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.glass-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 18px 18px 14px 18px;
+    box-shadow: 0 15px 45px rgba(0,0,0,0.25), 0 0 0 1px rgba(255,255,255,0.02);
+}
+
+.divider {
+    border-bottom: 1px solid var(--border);
+    margin: 16px 0;
+}
+
+.sidebar-card {
+    background: var(--card);
+    border-radius: 16px;
+    padding: 14px;
+    border: 1px solid var(--border);
+}
+
+.history-item {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 12px 14px;
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.02);
+}
+
+.history-item strong {
+    color: var(--text);
+}
+
+.muted {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+button[kind="primary"] {
+    background: linear-gradient(135deg, #34d399, #10b981) !important;
+    color: #0b0f19 !important;
+    font-weight: 700 !important;
+    border: none !important;
+}
 
 [data-testid="stSidebar"] {
-    min-width: 240px !important;
-    max-width: 240px !important;
-    width: 240px !important;
+    background: rgba(0,0,0,0.25);
 }
-
-/* Remove scroll inside sidebar */
-[data-testid="stSidebar"] .css-1lcbmhc, 
-[data-testid="stSidebar"] .css-1r6slb0 {
-    overflow-y: hidden !important;
-}
-
-/* Green buttons */
-button[kind="primary"] {
-    background-color: #0FA958 !important;
-    color: white !important;
-}
-
-/* Logout button wrapper */
-.sidebar-footer {
-    margin-top: 40px;
-    padding-top: 20px;
-}
-
 </style>
-""", unsafe_allow_html=True)
+"""
+
 
 # -------------------------------------------------------------------
-# 🎨 MAIN APP LAYOUT
+# MAIN APP LAYOUT
 # -------------------------------------------------------------------
-def main():
-    require_login()
-
-    # ---------------------------
-    # SIDEBAR (only after login)
-    # ---------------------------
+def render_sidebar(examples):
     with st.sidebar:
-        st.subheader("💡 Examples")
-        st.write("""
-- How many customers are in each country?  
-- What is the total revenue by region?  
-- What products generated the most sales?  
-- Show the top 10 customers by total revenue.  
-- Daily order counts this year.
-""")
+        st.markdown("<div class='sidebar-card'>", unsafe_allow_html=True)
+        st.markdown("#### Quick prompts")
+        for ex in examples:
+            st.markdown(f"- {ex}")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        st.markdown('<div class="sidebar-footer">', unsafe_allow_html=True)
-        if st.button("📕 Logout", use_container_width=True):
+        st.markdown("<div style='height: 14px'></div>", unsafe_allow_html=True)
+
+        st.markdown("<div class='sidebar-card'>", unsafe_allow_html=True)
+        st.markdown("#### Session")
+        if st.button("Logout", use_container_width=True):
             st.session_state.logged_in = False
             st.rerun()
         st.markdown("</div>", unsafe_allow_html=True)
 
-    # ---------------------------
-    # MAIN PAGE CONTENT
-    # ---------------------------
-    st.title("🤖 AI SQL Navigator — Sales & Customer Insights")
-    st.write("✨ Natural language in, SQL out.")
-    st.markdown("---")
 
-    if "query_history" not in st.session_state:
-        st.session_state.query_history = []
+def render_hero():
+    left, right = st.columns([1.6, 1])
+    with left:
+        st.markdown("<p class='eyebrow'>AI SQL Copilot</p>", unsafe_allow_html=True)
+        st.markdown(
+            "<h1 class='hero-title'>Ask a business question, get production-ready SQL.</h1>",
+            unsafe_allow_html=True,
+        )
+        st.markdown(
+            "<p class='hero-sub'>Optimized for your customer sales warehouse — grounded in the live schema.</p>",
+            unsafe_allow_html=True,
+        )
+        st.markdown('<div class="pill-row"><span class="pill">Customer insights</span><span class="pill">Revenue</span><span class="pill">Regions & products</span></div>', unsafe_allow_html=True)
+    with right:
+        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+        st.markdown("**Session Snapshot**")
+        st.metric("Queries this session", len(st.session_state.get("query_history", [])))
+        last = st.session_state.get("query_history", [])[-1]["question"] if st.session_state.get("query_history") else "—"
+        st.caption(f"Last question: {last}")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-    user_question = st.text_area("What’s on your mind?", height=90)
 
-    if st.button("Generate SQL", type="primary"):
-        sql = generate_sql_with_gpt(user_question)
-        if sql:
-            st.session_state.generated_sql = sql
-            st.session_state.query_history.append(user_question)
+def render_query_area(user_question):
+    st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+    st.markdown("### Compose a question")
+    st.caption("Natural language in — the copilot returns SQL that fits your warehouse.")
+    question = st.text_area(
+        "What do you want to know?",
+        value=user_question,
+        placeholder="e.g., Compare revenue by region for the last 90 days and highlight top 5 customers per region.",
+        height=120,
+    )
+    col1, col2 = st.columns([1, 1])
+    submit = col1.button("Generate SQL", type="primary")
+    clear = col2.button("Clear prompt")
+    st.markdown("</div>", unsafe_allow_html=True)
+    return question, submit, clear
 
+
+def render_sql_and_results():
     if "generated_sql" in st.session_state:
-        st.subheader("Generated SQL Query")
-        edited_sql = st.text_area("Edit if needed:", value=st.session_state.generated_sql, height=180)
+        st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
+        st.markdown("### Generated SQL")
+        edited_sql = st.text_area("Edit or tweak", value=st.session_state.generated_sql, height=180)
+        run = st.button("Run query", type="primary")
+        st.markdown("</div>", unsafe_allow_html=True)
 
-        if st.button("Run Query", type="primary"):
+        if run:
             df = run_query(edited_sql)
             if df is not None:
+                st.session_state.generated_sql = edited_sql
                 st.success(f"Returned {len(df)} rows")
                 st.dataframe(df, use_container_width=True)
 
-    st.markdown("---")
-    st.subheader("📜 Query History")
 
-    for q in reversed(st.session_state.query_history):
-        st.expander(q).write("")
+def render_history():
+    st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
+    st.markdown("### Query history")
+    history = st.session_state.get("query_history", [])
+    if not history:
+        st.caption("No prompts yet. Your recent questions will appear here.")
+        return
+    for item in reversed(history):
+        st.markdown(
+            f"<div class='history-item'><strong>Q:</strong> {item['question']}<br><span class='muted'>SQL generated and saved</span></div>",
+            unsafe_allow_html=True,
+        )
 
-# Run app
+
+def main():
+    st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
+
+    # Session state defaults
+    if "query_history" not in st.session_state:
+        st.session_state.query_history = []
+
+    require_login()
+
+    examples = [
+        "Rank regions by revenue month over month.",
+        "Top 10 customers by lifetime value.",
+        "Products with declining demand this quarter.",
+        "Daily order volume by country vs prior week.",
+        "Average basket size by region and month.",
+    ]
+    render_sidebar(examples)
+    render_hero()
+
+    current_question = st.session_state.get("current_question", "")
+    question, submit, clear = render_query_area(current_question)
+
+    if clear:
+        st.session_state.pop("generated_sql", None)
+        st.session_state.current_question = ""
+        st.rerun()
+
+    if submit and question.strip():
+        sql = generate_sql_with_gpt(question.strip())
+        if sql:
+            st.session_state.generated_sql = sql
+            st.session_state.query_history.append({"question": question.strip(), "sql": sql})
+            st.session_state.current_question = question.strip()
+            st.rerun()
+    elif submit and not question.strip():
+        st.warning("Please enter a question first.")
+
+    render_sql_and_results()
+    render_history()
+
+
 if __name__ == "__main__":
     main()
