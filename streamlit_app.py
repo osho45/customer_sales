@@ -1,4 +1,3 @@
-import os
 import re
 import bcrypt
 import pandas as pd
@@ -76,7 +75,7 @@ def login_screen():
     )
 
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
-    password = st.text_input("Password", type="password", key="login_password", placeholder="••••••••")
+    password = st.text_input("Password", type="password", key="login_password", placeholder="********")
 
     if st.button("Enter workspace", type="primary"):
         if password and bcrypt.checkpw(password.encode("utf-8"), HASHED_PASSWORD):
@@ -170,7 +169,6 @@ GLOBAL_CSS = """
     --bg-2: #0c1629;
     --card: rgba(255, 255, 255, 0.04);
     --border: rgba(255, 255, 255, 0.08);
-    --glow: rgba(109, 211, 255, 0.35);
     --accent: #6dd3ff;
     --accent-2: #a855f7;
     --text: #e5e7eb;
@@ -310,7 +308,7 @@ def render_hero():
             unsafe_allow_html=True,
         )
         st.markdown(
-            "<p class='hero-sub'>Optimized for your customer sales warehouse — grounded in the live schema.</p>",
+            "<p class='hero-sub'>Optimized for your customer sales warehouse - grounded in the live schema.</p>",
             unsafe_allow_html=True,
         )
         st.markdown('<div class="pill-row"><span class="pill">Customer insights</span><span class="pill">Revenue</span><span class="pill">Regions & products</span></div>', unsafe_allow_html=True)
@@ -318,15 +316,13 @@ def render_hero():
         st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
         st.markdown("**Session Snapshot**")
         st.metric("Queries this session", len(st.session_state.get("query_history", [])))
-        last = st.session_state.get("query_history", [])[-1]["question"] if st.session_state.get("query_history") else "—"
-        st.caption(f"Last question: {last}")
         st.markdown("</div>", unsafe_allow_html=True)
 
 
 def render_query_area(user_question):
     st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
     st.markdown("### Compose a question")
-    st.caption("Natural language in — the copilot returns SQL that fits your warehouse.")
+    st.caption("Natural language in - the copilot returns SQL that fits your warehouse.")
     question = st.text_area(
         "What do you want to know?",
         value=user_question,
@@ -363,17 +359,38 @@ def render_history():
     if not history:
         st.caption("No prompts yet. Your recent questions will appear here.")
         return
-    for item in reversed(history):
+
+    for idx, item in enumerate(reversed(history)):
         st.markdown(
             f"<div class='history-item'><strong>Q:</strong> {item['question']}<br><span class='muted'>SQL generated and saved</span></div>",
             unsafe_allow_html=True,
         )
+        result_area = st.empty()
+        btn_cols = st.columns([1, 1, 6])
+        run_clicked = False
+        run_df = None
+
+        with btn_cols[0]:
+            if st.button("Load", key=f"load_hist_{idx}", use_container_width=True):
+                st.session_state.generated_sql = item["sql"]
+                st.session_state.current_question = item["question"]
+                st.success("Loaded into the editor.")
+                st.rerun()
+        with btn_cols[1]:
+            if st.button("Run again", key=f"run_hist_{idx}", use_container_width=True):
+                st.session_state.generated_sql = item["sql"]
+                st.session_state.current_question = item["question"]
+                run_df = run_query(item["sql"])
+                run_clicked = True
+
+        if run_clicked and run_df is not None:
+            result_area.success(f"Ran history query • {len(run_df)} rows")
+            result_area.dataframe(run_df, use_container_width=True)
 
 
 def main():
     st.markdown(GLOBAL_CSS, unsafe_allow_html=True)
 
-    # Session state defaults
     if "query_history" not in st.session_state:
         st.session_state.query_history = []
 
