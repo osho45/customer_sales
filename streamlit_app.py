@@ -308,10 +308,11 @@ def render_query_area(user_question):
     st.markdown("<h3 style='text-align:center; margin:0;'>Compose a question</h3>", unsafe_allow_html=True)
     st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
 
-    question = st.text_input(
+    question = st.text_area(
         label="",
         value=user_question,
         placeholder="Ask about: Region, Country, Customer, Product, ProductCategory, OrderDetail",
+        height=160,
         label_visibility="collapsed",
     )
     col1, col2 = st.columns([1, 1], gap="medium")
