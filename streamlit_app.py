@@ -248,6 +248,35 @@ html, body, [data-testid="stAppViewContainer"] {
     font-size: 13px;
 }
 
+.chat-shell {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 8px 12px;
+}
+
+.chat-shell input {
+    background: transparent !important;
+    border: none !important;
+    color: var(--text) !important;
+}
+
+.chat-icon {
+    color: var(--muted);
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-icon.accent {
+    background: #0fa958;
+    color: #0b0f19;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+}
+
 button[kind="primary"] {
     background: linear-gradient(135deg, #34d399, #10b981) !important;
     color: #0b0f19 !important;
@@ -304,13 +333,26 @@ def render_hero():
 
 def render_query_area(user_question):
     st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-    st.markdown("### Compose a question")
-    question = st.text_area(
-        "What do you want to know?",
-        value=user_question,
-        placeholder="Ask about: Region, Country, Customer, Product, ProductCategory, OrderDetail",
-        height=120,
-    )
+    st.markdown("### Where should we begin?")
+    st.caption("Ask anything; we'll turn it into SQL.")
+
+    st.markdown("<div class='chat-shell'>", unsafe_allow_html=True)
+    c1, c2, c3, c4 = st.columns([0.08, 0.82, 0.05, 0.05])
+    with c1:
+        st.markdown("<div class='chat-icon'>＋</div>", unsafe_allow_html=True)
+    with c2:
+        question = st.text_input(
+            label="",
+            value=user_question,
+            placeholder="Ask about: Region, Country, Customer, Product, ProductCategory, OrderDetail",
+            label_visibility="collapsed",
+        )
+    with c3:
+        st.markdown("<div class='chat-icon'>🎙️</div>", unsafe_allow_html=True)
+    with c4:
+        st.markdown("<div class='chat-icon accent'>🎛️</div>", unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
+
     col1, col2 = st.columns([1, 1])
     submit = col1.button("Generate SQL", type="primary")
     clear = col2.button("Clear prompt")
