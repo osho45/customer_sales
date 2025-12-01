@@ -293,7 +293,7 @@ def render_hero():
     with left:
         st.markdown("<p class='eyebrow'>AI SQL Copilot 🚀</p>", unsafe_allow_html=True)
         st.markdown(
-            "<h1 class='hero-title'>Ask a business question, get production-ready SQL.</h1>",
+            "<h1 class='hero-title'>Ask a business question - get production-ready SQL 🤖</h1>",
             unsafe_allow_html=True,
         )
         st.markdown(
