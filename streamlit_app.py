@@ -291,9 +291,9 @@ def render_sidebar(examples):
 def render_hero():
     left, right = st.columns([1.6, 1])
     with left:
-        st.markdown("<p class='eyebrow'>AI SQL Copilot 🚀</p>", unsafe_allow_html=True)
+        st.markdown("<p class='eyebrow'>AI SQL Copilot 🤖</p>", unsafe_allow_html=True)
         st.markdown(
-            "<h1 class='hero-title'>Ask a business question - get production-ready SQL 🤖</h1>",
+            "<h1 class='hero-title'>Ask a business question - get production-ready SQL</h1>",
             unsafe_allow_html=True,
         )
         st.markdown(
