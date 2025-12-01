@@ -293,17 +293,11 @@ def render_hero():
     with left:
         st.markdown("<p class='eyebrow'>AI SQL Copilot 🤖</p>", unsafe_allow_html=True)
         st.markdown(
-            "<h1 class='hero-title'>Ask a business question - get production-ready SQL</h1>",
+            "<h1 class='hero-title'>Ask a business question - Get production-ready SQL</h1>",
             unsafe_allow_html=True,
         )
-        st.markdown(
-            "<p class='hero-sub'>Optimized for your customer sales warehouse - grounded in the live schema.</p>",
-            unsafe_allow_html=True,
-        )
-        st.caption("Tables: Region, Country, Customer, Product, ProductCategory, OrderDetail")
     with right:
         st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-        st.markdown("**Session Snapshot**")
         st.metric("Queries this session", len(st.session_state.get("query_history", [])))
         st.markdown("</div>", unsafe_allow_html=True)
 
@@ -311,11 +305,10 @@ def render_hero():
 def render_query_area(user_question):
     st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
     st.markdown("### Compose a question")
-    st.caption("Natural language in - the copilot returns SQL that fits your warehouse.")
     question = st.text_area(
         "What do you want to know?",
         value=user_question,
-        placeholder="Tables: Region, Country, Customer, Product, ProductCategory, OrderDetail",
+        placeholder="Ask about: Region, Country, Customer, Product, ProductCategory, OrderDetail",
         height=120,
     )
     col1, col2 = st.columns([1, 1])
