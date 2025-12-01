@@ -315,7 +315,7 @@ def render_query_area(user_question):
     question = st.text_area(
         "What do you want to know?",
         value=user_question,
-        placeholder="e.g., Compare revenue by region for the last 90 days and highlight top 5 customers per region.",
+        placeholder="Tables: Region, Country, Customer, Product, ProductCategory, OrderDetail",
         height=120,
     )
     col1, col2 = st.columns([1, 1])
