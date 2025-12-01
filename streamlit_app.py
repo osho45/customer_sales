@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, text
 
 
 load_dotenv()
-st.set_page_config(page_title="SQL Copilot", page_icon="SQL", layout="wide")
+st.set_page_config(page_title="SQL Copilot", page_icon="🛰️", layout="wide")
 
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 HASHED_PASSWORD = st.secrets["HASHED_PASSWORD"].encode("utf-8")
@@ -211,22 +211,6 @@ html, body, [data-testid="stAppViewContainer"] {
     margin-bottom: 4px;
 }
 
-.pill {
-    background: rgba(255,255,255,0.06);
-    border: 1px solid var(--border);
-    padding: 6px 10px;
-    border-radius: 14px;
-    font-size: 12px;
-    color: var(--muted);
-}
-
-.pill-row {
-    display: flex;
-    gap: 8px;
-    margin-top: 10px;
-    flex-wrap: wrap;
-}
-
 .glass-card {
     background: var(--card);
     border: 1px solid var(--border);
@@ -274,6 +258,11 @@ button[kind="primary"] {
 [data-testid="stSidebar"] {
     background: rgba(0,0,0,0.25);
 }
+
+/* Hide heading link icons */
+h1 a, h2 a, h3 a, h4 a {
+    display: none !important;
+}
 </style>
 """
 
@@ -302,7 +291,7 @@ def render_sidebar(examples):
 def render_hero():
     left, right = st.columns([1.6, 1])
     with left:
-        st.markdown("<p class='eyebrow'>AI SQL Copilot</p>", unsafe_allow_html=True)
+        st.markdown("<p class='eyebrow'>AI SQL Copilot 🚀</p>", unsafe_allow_html=True)
         st.markdown(
             "<h1 class='hero-title'>Ask a business question, get production-ready SQL.</h1>",
             unsafe_allow_html=True,
@@ -311,7 +300,6 @@ def render_hero():
             "<p class='hero-sub'>Optimized for your customer sales warehouse - grounded in the live schema.</p>",
             unsafe_allow_html=True,
         )
-        st.markdown('<div class="pill-row"><span class="pill">Customer insights</span><span class="pill">Revenue</span><span class="pill">Regions & products</span></div>', unsafe_allow_html=True)
     with right:
         st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
         st.markdown("**Session Snapshot**")
@@ -321,7 +309,7 @@ def render_hero():
 
 def render_query_area(user_question):
     st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-    st.markdown("### Compose a question")
+    st.markdown("### ✏️ Compose a question")
     st.caption("Natural language in - the copilot returns SQL that fits your warehouse.")
     question = st.text_area(
         "What do you want to know?",
@@ -339,7 +327,7 @@ def render_query_area(user_question):
 def render_sql_and_results():
     if "generated_sql" in st.session_state:
         st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-        st.markdown("### Generated SQL")
+        st.markdown("### 🧠 Generated SQL")
         edited_sql = st.text_area("Edit or tweak", value=st.session_state.generated_sql, height=180)
         run = st.button("Run query", type="primary")
         st.markdown("</div>", unsafe_allow_html=True)
@@ -354,7 +342,7 @@ def render_sql_and_results():
 
 def render_history():
     st.markdown("<div class='divider'></div>", unsafe_allow_html=True)
-    st.markdown("### Query history")
+    st.markdown("### 📜 Query history")
     history = st.session_state.get("query_history", [])
     if not history:
         st.caption("No prompts yet. Your recent questions will appear here.")
@@ -398,11 +386,11 @@ def main():
     require_login()
 
     examples = [
-        "YOY revenue change by product category.",
+        "Which regions order the most high-priced products?",
         "Repeat vs new customers over the last 60 days.",
         "Top 10 products by gross margin.",
-        "Order latency by region and month.",
-        "Churned customers in the last quarter.",
+        "Longest streak of days with orders",
+        "Which country has the highest revenue per customer?",
     ]
     render_sidebar(examples)
     render_hero()
