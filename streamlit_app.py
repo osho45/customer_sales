@@ -312,7 +312,7 @@ def render_query_area(user_question):
         label="",
         value=user_question,
         placeholder="Ask about: Region, Country, Customer, Product, ProductCategory, OrderDetail",
-        height=160,
+        height=100,
         label_visibility="collapsed",
     )
     col1, col2 = st.columns([1, 1], gap="medium")
