@@ -303,6 +303,7 @@ def render_hero():
 
 
 def render_query_area(user_question):
+    st.markdown("<div style='height:32px;'></div>", unsafe_allow_html=True)
     st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
     st.markdown("<h3 style='text-align:center; margin:0;'>Compose a question</h3>", unsafe_allow_html=True)
     st.markdown("<div style='height:18px;'></div>", unsafe_allow_html=True)
