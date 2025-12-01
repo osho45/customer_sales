@@ -291,7 +291,7 @@ def render_sidebar(examples):
 def render_hero():
     left, right = st.columns([1.6, 1])
     with left:
-        st.markdown("<p class='eyebrow'>AI SQL Copilot 🤖</p>", unsafe_allow_html=True)
+        st.markdown("<p class='eyebrow'>AI SQL Copilot </p>", unsafe_allow_html=True)
         st.markdown(
             "<h1 class='hero-title'>Ask a business question - get production-ready SQL</h1>",
             unsafe_allow_html=True,
@@ -309,7 +309,7 @@ def render_hero():
 
 def render_query_area(user_question):
     st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
-    st.markdown("### ✏️ Compose a question")
+    st.markdown("### Compose a question")
     st.caption("Natural language in - the copilot returns SQL that fits your warehouse.")
     question = st.text_area(
         "What do you want to know?",
@@ -387,7 +387,7 @@ def main():
 
     examples = [
         "Which regions order the most high-priced products?",
-        "Repeat vs new customers over the last 60 days.",
+        "First purchase date of every customer",
         "Top 10 products by gross margin.",
         "Longest streak of days with orders",
         "Which country has the highest revenue per customer?",
