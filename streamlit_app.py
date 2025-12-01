@@ -291,7 +291,7 @@ def render_sidebar(examples):
 def render_hero():
     left, right = st.columns([1.6, 1])
     with left:
-        st.markdown("<p class='eyebrow'>AI SQL Copilot </p>", unsafe_allow_html=True)
+        st.markdown("<p class='eyebrow'>AI SQL Copilot 🤖</p>", unsafe_allow_html=True)
         st.markdown(
             "<h1 class='hero-title'>Ask a business question - get production-ready SQL</h1>",
             unsafe_allow_html=True,
@@ -300,6 +300,7 @@ def render_hero():
             "<p class='hero-sub'>Optimized for your customer sales warehouse - grounded in the live schema.</p>",
             unsafe_allow_html=True,
         )
+        st.caption("Tables: Region, Country, Customer, Product, ProductCategory, OrderDetail")
     with right:
         st.markdown("<div class='glass-card'>", unsafe_allow_html=True)
         st.markdown("**Session Snapshot**")
