@@ -2,20 +2,16 @@ import re
 import bcrypt
 import pandas as pd
 import streamlit as st
-from dotenv import load_dotenv
 from openai import OpenAI
 from sqlalchemy import create_engine, text
 
 
-load_dotenv()
 st.set_page_config(page_title="SQL Copilot", page_icon="🛰️", layout="wide")
 
 OPENAI_API_KEY = st.secrets["OPENAI_API_KEY"]
 HASHED_PASSWORD = st.secrets["HASHED_PASSWORD"].encode("utf-8")
 
-# -------------------------------------------------------------------
-# DATABASE SCHEMA (for the prompt)
-# -------------------------------------------------------------------
+
 DATABASE_SCHEMA = """
 Database Schema (Customer Sales):
 
@@ -61,9 +57,7 @@ TABLE: "OrderDetail" (
 )
 """
 
-# -------------------------------------------------------------------
-# LOGIN
-# -------------------------------------------------------------------
+
 def login_screen():
     st.markdown(
         """
@@ -92,9 +86,7 @@ def require_login():
         st.stop()
 
 
-# -------------------------------------------------------------------
-# DATABASE ENGINE
-# -------------------------------------------------------------------
+
 @st.cache_resource
 def get_engine():
     username = st.secrets["POSTGRES_USERNAME"]
@@ -114,9 +106,6 @@ def run_query(sql):
         return None
 
 
-# -------------------------------------------------------------------
-# OPENAI CLIENT
-# -------------------------------------------------------------------
 @st.cache_resource
 def get_openai_client():
     return OpenAI(api_key=OPENAI_API_KEY)
@@ -157,9 +146,7 @@ Rules:
         return None
 
 
-# -------------------------------------------------------------------
-# THEME / STYLES
-# -------------------------------------------------------------------
+
 GLOBAL_CSS = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500&display=swap');
@@ -267,9 +254,6 @@ h1 a, h2 a, h3 a, h4 a {
 """
 
 
-# -------------------------------------------------------------------
-# MAIN APP LAYOUT
-# -------------------------------------------------------------------
 def render_sidebar(examples):
     with st.sidebar:
         st.markdown("<div class='sidebar-card'>", unsafe_allow_html=True)

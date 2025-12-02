@@ -9,8 +9,7 @@ from psycopg2.extras import execute_values
 from utils import get_db_url
 
 
-SCHEMA_SQL = """
--- Drop in dependency order
+SCHEMA_SQL="""
 DROP TABLE IF EXISTS "OrderDetail" CASCADE;
 DROP TABLE IF EXISTS "Product" CASCADE;
 DROP TABLE IF EXISTS "ProductCategory" CASCADE;
@@ -18,13 +17,11 @@ DROP TABLE IF EXISTS "Customer" CASCADE;
 DROP TABLE IF EXISTS "Country" CASCADE;
 DROP TABLE IF EXISTS "Region" CASCADE;
 
--- Region
 CREATE TABLE "Region" (
     "RegionID"   SERIAL PRIMARY KEY,
     "Region"     TEXT NOT NULL
 );
 
--- Country
 CREATE TABLE "Country" (
     "CountryID"  SERIAL PRIMARY KEY,
     "Country"    TEXT NOT NULL,
@@ -32,7 +29,6 @@ CREATE TABLE "Country" (
     FOREIGN KEY ("RegionID") REFERENCES "Region"("RegionID")
 );
 
--- Customer
 CREATE TABLE "Customer" (
     "CustomerID" INTEGER PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
     "FirstName"  TEXT NOT NULL,
@@ -43,14 +39,12 @@ CREATE TABLE "Customer" (
     FOREIGN KEY ("CountryID") REFERENCES "Country"("CountryID")
 );
 
--- ProductCategory
 CREATE TABLE "ProductCategory" (
     "ProductCategoryID"     SERIAL PRIMARY KEY,
     "ProductCategory"       TEXT NOT NULL,
     "ProductCategoryDescription" TEXT NOT NULL
 );
 
--- Product
 CREATE TABLE "Product" (
     "ProductID"        SERIAL PRIMARY KEY,
     "ProductName"      TEXT NOT NULL,
@@ -58,8 +52,6 @@ CREATE TABLE "Product" (
     "ProductCategoryID" INTEGER NOT NULL,
     FOREIGN KEY ("ProductCategoryID") REFERENCES "ProductCategory"("ProductCategoryID")
 );
-
--- OrderDetail
 CREATE TABLE "OrderDetail" (
     "OrderID"         SERIAL PRIMARY KEY,
     "CustomerID"      INTEGER NOT NULL,
@@ -73,119 +65,97 @@ CREATE TABLE "OrderDetail" (
 
 
 def split_name(full_name: str):
-    """
-    Match your mini-project logic:
-    FirstName = first token
-    LastName  = everything after first token (if exists)
-    """
-    full_name = full_name.strip()
-    parts = full_name.split(maxsplit=1)
-    if len(parts) == 2:
-        first, last = parts
+    full_name=full_name.strip()
+    parts=full_name.split(maxsplit=1)
+    if len(parts)==2:
+        first, last=parts
     else:
-        first, last = parts[0], ""
+        first, last=parts[0], ""
     return first, last
 
 
 def parse_date_yyyymmdd(s: str) -> str:
-    """
-    Convert 20120814 -> '2012-08-14'.
-    If already looks like 'YYYY-MM-DD', just return it.
-    """
-    s = s.strip()
-    if len(s) == 8 and s.isdigit():
+    s=s.strip()
+    if len(s)==8 and s.isdigit():
         return f"{s[0:4]}-{s[4:6]}-{s[6:8]}"
     return s
 
 
 def read_raw_data(data_filename: str):
-    """
-    Read data.csv (tab separated, no csv module, no pandas)
-    and return the collections needed for dimension and fact tables.
-    """
-    regions = set()
-    countries = set()  # (country_name, region_name)
-    customers = set()  # (first_name, last_name, address, city, country_name)
-    product_categories = set()  # (category, description)
-    products = set()  # (product_name, unit_price, category_name)
-    order_lines = []  # (full_name_key, product_name, order_date_str, quantity_int)
+    regions=set()
+    countries=set()  
+    customers=set()  
+    product_categories=set() 
+    products=set()  
+    order_lines=[] 
 
     with open(data_filename, "r", encoding="utf-8") as f:
-        header = f.readline()
+        header=f.readline()
         for line in f:
-            line = line.strip()
+            line=line.strip()
             if not line:
                 continue
 
-            cols = line.split("\t")
+            cols=line.split("\t")
             if len(cols) < 11:
-                # Bad / incomplete row
                 continue
 
-            name_raw = cols[0].strip()
-            address = cols[1].strip()
-            city = cols[2].strip()
-            country_name = cols[3].strip()
-            region_name = cols[4].strip()
+            name_raw=cols[0].strip()
+            address=cols[1].strip()
+            city=cols[2].strip()
+            country_name=cols[3].strip()
+            region_name=cols[4].strip()
 
-            product_names_field = cols[5].strip()
-            product_category_field = cols[6].strip()
-            product_category_desc_field = cols[7].strip()
-            price_field = cols[8].strip()
-            qty_field = cols[9].strip()
-            date_field = cols[10].strip()
+            product_names_field=cols[5].strip()
+            product_category_field=cols[6].strip()
+            product_category_desc_field=cols[7].strip()
+            price_field=cols[8].strip()
+            qty_field=cols[9].strip()
+            date_field=cols[10].strip()
 
-            # --- Region + Country sets ---
             if region_name:
                 regions.add(region_name)
             if country_name and region_name:
                 countries.add((country_name, region_name))
 
-            # --- Customer set ---
             if name_raw and address and city and country_name:
-                first_name, last_name = split_name(name_raw)
+                first_name, last_name=split_name(name_raw)
                 customers.add((first_name, last_name, address, city, country_name))
 
-            # --- Split multivalue fields ---
             if not product_names_field:
                 continue
 
-            product_names = [p.strip() for p in product_names_field.split(";") if p.strip()]
-            product_categories_raw = [c.strip() for c in product_category_field.split(";") if c.strip()]
-            product_cat_descs = [d.strip() for d in product_category_desc_field.split(";") if d.strip()]
-            prices_raw = [p.strip() for p in price_field.split(";") if p.strip()]
-            qtys_raw = [q.strip() for q in qty_field.split(";") if q.strip()]
-            dates_raw = [d.strip() for d in date_field.split(";") if d.strip()]
+            product_names=[p.strip() for p in product_names_field.split(";") if p.strip()]
+            product_categories_raw=[c.strip() for c in product_category_field.split(";") if c.strip()]
+            product_cat_descs=[d.strip() for d in product_category_desc_field.split(";") if d.strip()]
+            prices_raw=[p.strip() for p in price_field.split(";") if p.strip()]
+            qtys_raw=[q.strip() for q in qty_field.split(";") if q.strip()]
+            dates_raw=[d.strip() for d in date_field.split(";") if d.strip()]
 
-            # --- ProductCategory set ---
             for cat_name, cat_desc in zip(product_categories_raw, product_cat_descs):
                 product_categories.add((cat_name, cat_desc))
 
-            # --- Product set ---
-            # ProductName, Price, CategoryName
             for pname, price_str, cat_name in zip(product_names, prices_raw, product_categories_raw):
                 try:
-                    price_val = float(price_str)
+                    price_val=float(price_str)
                 except ValueError:
                     continue
                 products.add((pname, price_val, cat_name))
 
-            # --- Order lines (fact items) ---
-            # Use the same name splitting rule to form the "full name key"
-            first_name, last_name = split_name(name_raw)
+            first_name, last_name=split_name(name_raw)
             if last_name:
-                full_name_key = f"{first_name} {last_name}"
+                full_name_key=f"{first_name} {last_name}"
             else:
-                full_name_key = first_name
+                full_name_key=first_name
 
             for pname, qty_str, d_raw in zip(product_names, qtys_raw, dates_raw):
                 if not pname or not qty_str or not d_raw:
                     continue
                 try:
-                    qty_val = int(qty_str)
+                    qty_val=int(qty_str)
                 except ValueError:
                     continue
-                order_date = parse_date_yyyymmdd(d_raw)
+                order_date=parse_date_yyyymmdd(d_raw)
                 order_lines.append((full_name_key, pname, order_date, qty_val))
 
     return {
@@ -199,30 +169,24 @@ def read_raw_data(data_filename: str):
 
 
 def create_schema(conn):
-    """Create the full Region / Country / Customer / ProductCategory / Product / OrderDetail schema."""
     with conn:
         with conn.cursor() as cur:
             cur.execute(SCHEMA_SQL)
 
 
 def insert_dimensions(conn, data):
-    """
-    Insert Region, Country, Customer, ProductCategory, Product
-    using executemany and build lookup dictionaries for IDs.
-    """
-    regions = sorted(data["regions"])
-    countries = sorted(data["countries"], key=lambda x: (x[0], x[1]))
-    customers = sorted(data["customers"], key=lambda x: (x[0], x[1]))
-    product_categories = sorted(data["product_categories"], key=lambda x: x[0])
-    products = sorted(data["products"], key=lambda x: x[0])
+    regions=sorted(data["regions"])
+    countries=sorted(data["countries"], key=lambda x: (x[0], x[1]))
+    customers=sorted(data["customers"], key=lambda x: (x[0], x[1]))
+    product_categories=sorted(data["product_categories"], key=lambda x: x[0])
+    products=sorted(data["products"], key=lambda x: x[0])
 
-    region_id_map = {}
-    country_id_map = {}
-    customer_id_map = {}
-    product_cat_id_map = {}
-    product_id_map = {}
+    region_id_map={}
+    country_id_map={}
+    customer_id_map={}
+    product_cat_id_map={}
+    product_id_map={}
 
-    # --- Region ---
     with conn:
         with conn.cursor() as cur:
             if regions:
@@ -235,14 +199,13 @@ def insert_dimensions(conn, data):
         with conn.cursor() as cur:
             cur.execute('SELECT "RegionID", "Region" FROM "Region"')
             for rid, rname in cur.fetchall():
-                region_id_map[rname] = rid
+                region_id_map[rname]=rid
 
-    # --- Country ---
     with conn:
         with conn.cursor() as cur:
-            rows = []
+            rows=[]
             for country_name, region_name in countries:
-                region_id = region_id_map.get(region_name)
+                region_id=region_id_map.get(region_name)
                 if region_id is not None:
                     rows.append((country_name, region_id))
             if rows:
@@ -255,12 +218,11 @@ def insert_dimensions(conn, data):
         with conn.cursor() as cur:
             cur.execute('SELECT "CountryID", "Country" FROM "Country"')
             for cid, cname in cur.fetchall():
-                country_id_map[cname] = cid
+                country_id_map[cname]=cid
 
-    # --- ProductCategory ---
     with conn:
         with conn.cursor() as cur:
-            rows = []
+            rows=[]
             for cat_name, cat_desc in product_categories:
                 rows.append((cat_name, cat_desc))
             if rows:
@@ -276,14 +238,13 @@ def insert_dimensions(conn, data):
                 'SELECT "ProductCategoryID", "ProductCategory" FROM "ProductCategory"'
             )
             for pcid, pcname in cur.fetchall():
-                product_cat_id_map[pcname] = pcid
+                product_cat_id_map[pcname]=pcid
 
-    # --- Product ---
     with conn:
         with conn.cursor() as cur:
-            rows = []
+            rows=[]
             for pname, price_val, cat_name in products:
-                cat_id = product_cat_id_map.get(cat_name)
+                cat_id=product_cat_id_map.get(cat_name)
                 if cat_id is not None:
                     rows.append((pname, price_val, cat_id))
             if rows:
@@ -299,14 +260,13 @@ def insert_dimensions(conn, data):
                 'SELECT "ProductID", "ProductName" FROM "Product"'
             )
             for pid, pname in cur.fetchall():
-                product_id_map[pname] = pid
+                product_id_map[pname]=pid
 
-    # --- Customer ---
     with conn:
         with conn.cursor() as cur:
-            rows = []
+            rows=[]
             for first, last, addr, city, country_name in customers:
-                country_id = country_id_map.get(country_name)
+                country_id=country_id_map.get(country_name)
                 if country_id is not None:
                     rows.append((first, last, addr, city, country_id))
             if rows:
@@ -316,53 +276,32 @@ def insert_dimensions(conn, data):
                     rows,
                 )
 
-    # Build customer_id_map using FirstName + " " + LastName (same key logic as order_lines)
     with conn:
         with conn.cursor() as cur:
             cur.execute(
                 'SELECT "CustomerID", "FirstName", "LastName" FROM "Customer"'
             )
             for cid, first, last in cur.fetchall():
-                full = f"{first} {last}".strip()
-                customer_id_map[full] = cid
+                full=f"{first} {last}".strip()
+                customer_id_map[full]=cid
 
     return region_id_map, country_id_map, customer_id_map, product_cat_id_map, product_id_map
-
-
-# def insert_orders(conn, data, customer_id_map, product_id_map):
-#     """Insert rows into OrderDetail using executemany."""
-#     order_rows = []
-#     for full_name_key, product_name, order_date_str, qty in data["order_lines"]:
-#         cust_id = customer_id_map.get(full_name_key)
-#         prod_id = product_id_map.get(product_name)
-#         if cust_id is None or prod_id is None:
-#             continue
-#         order_rows.append((cust_id, prod_id, order_date_str, qty))
-
-#     with conn:
-#         with conn.cursor() as cur:
-#             if order_rows:
-#                 cur.executemany(
-#                     'INSERT INTO "OrderDetail" ("CustomerID", "ProductID", "OrderDate", "QuantityOrdered") '
-#                     'VALUES (%s, %s, %s, %s)',
-#                     order_rows,
-#                 )
 
 
 
 def insert_orders(conn, data, customer_id_map, product_id_map):
 
-    order_rows = []
+    order_rows=[]
     for full_name_key, product_name, order_date_str, qty in data["order_lines"]:
-        cust_id = customer_id_map.get(full_name_key)
-        prod_id = product_id_map.get(product_name)
+        cust_id=customer_id_map.get(full_name_key)
+        prod_id=product_id_map.get(product_name)
         if cust_id is None or prod_id is None:
             continue
         order_rows.append((cust_id, prod_id, order_date_str, qty))
 
     with conn:
         with conn.cursor() as cur:
-            sql = '''
+            sql='''
                 INSERT INTO "OrderDetail"
                 ("CustomerID", "ProductID", "OrderDate", "QuantityOrdered")
                 VALUES %s
@@ -372,19 +311,18 @@ def insert_orders(conn, data, customer_id_map, product_id_map):
 
 
 def main():
-    # Resolve data.csv relative to this file
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    data_file = os.path.join(base_dir, "data.csv")
+    base_dir=os.path.dirname(os.path.abspath(__file__))
+    data_file=os.path.join(base_dir, "data.csv")
 
-    db_url = get_db_url()
-    conn = psycopg2.connect(db_url)
+    db_url=get_db_url()
+    conn=psycopg2.connect(db_url)
 
     try:
         print("Creating schema...")
         create_schema(conn)
 
         print("Reading raw data from", data_file)
-        data = read_raw_data(data_file)
+        data=read_raw_data(data_file)
         print("  Regions:", len(data["regions"]))
         print("  Countries:", len(data["countries"]))
         print("  Customers:", len(data["customers"]))
@@ -393,15 +331,15 @@ def main():
         print("  Order lines:", len(data["order_lines"]))
 
         print("Inserting dimensions...")
-        _, _, customer_id_map, _, product_id_map = insert_dimensions(conn, data)
+        _, _, customer_id_map, _, product_id_map=insert_dimensions(conn, data)
 
         print("Inserting order details...")
         insert_orders(conn, data, customer_id_map, product_id_map)
 
-        print("✅ populate_db completed successfully.")
+        print("populate_db completed successfully.")
     finally:
         conn.close()
 
 
-if __name__ == "__main__":
+if __name__=="__main__":
     main()
